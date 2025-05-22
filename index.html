@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Color Palette Generator</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+    .palette { display: flex; justify-content: center; margin-top: 20px; }
+    .color-box {
+      width: 100px; height: 100px; margin: 0 5px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: bold; border-radius: 8px;
+    }
+    input[type="color"] { width: 100px; height: 50px; cursor: pointer; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+  <h2>🎨 AI Color Palette Generator</h2>
+  <p>Select a color and generate a smart palette:</p>
+
+  <input type="color" id="baseColor" value="#6A5ACD">
+  <br>
+  <button onclick="generatePalette()">Generate Palette</button>
+
+  <div class="palette" id="palette"></div>
+
+  <script>
+    function hexToRgb(hex) {
+      let bigint = parseInt(hex.slice(1), 16);
+      return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+    }
+
+    function rgbToHex(rgb) {
+      return "#" + rgb.map(x => x.toString(16).padStart(2, '0')).join('');
+    }
+
+    function generatePalette() {
+      let baseColor = document.getElementById("baseColor").value;
+      let rgb = hexToRgb(baseColor);
+
+      // Lock base color in position 1, rest are "N" (random)
+      let input = [rgb, "N", "N", "N", "N"];
+
+      fetch("https://colormind.io/api/", {
+        method: "POST",
+        body: JSON.stringify({ model: "default", input: input }),
+      })
+      .then(res => res.json())
+      .then(data => {
+        let palette = data.result;
+        let paletteDiv = document.getElementById("palette");
+        paletteDiv.innerHTML = "";
+
+        palette.forEach(color => {
+          let hex = rgbToHex(color);
+          let textColor = (color[0]*0.299 + color[1]*0.587 + color[2]*0.114) > 186 ? "#000" : "#fff";
+          let box = `<div class="color-box" style="background:${hex}; color:${textColor}">${hex}</div>`;
+          paletteDiv.innerHTML += box;
+        });
+      })
+      .catch(err => {
+        alert("Error getting colors. Please try again.");
+        console.error(err);
+      });
+    }
+
+    // Auto-generate on load
+    window.onload = generatePalette;
+  </script>
+
+</body>
+</html>
